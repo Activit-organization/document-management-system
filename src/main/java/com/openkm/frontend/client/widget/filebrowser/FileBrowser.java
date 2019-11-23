@@ -25,6 +25,8 @@ import com.allen_sauer.gwt.log.client.Log;
 import com.google.gwt.core.client.GWT;
 import com.google.gwt.event.dom.client.ClickEvent;
 import com.google.gwt.event.dom.client.ClickHandler;
+import com.google.gwt.event.dom.client.DragEnterEvent;
+import com.google.gwt.event.dom.client.DragEnterHandler;
 import com.google.gwt.gen2.table.client.AbstractScrollTable.ScrollTableImages;
 import com.google.gwt.gen2.table.client.FixedWidthFlexTable;
 import com.google.gwt.gen2.table.client.FixedWidthGrid;
@@ -52,6 +54,7 @@ import com.openkm.frontend.client.widget.ConfirmPopup;
 import com.openkm.frontend.client.widget.MenuPopup;
 import com.openkm.frontend.client.widget.OriginPanel;
 import com.openkm.frontend.client.widget.filebrowser.menu.*;
+import com.openkm.frontend.client.widget.filebrowser.uploader.DragAndDropUploader;
 import com.openkm.frontend.client.widget.foldertree.FolderSelectPopup;
 
 import java.util.*;
@@ -96,6 +99,7 @@ public class FileBrowser extends Composite implements OriginPanel, HasDocumentEv
 
 	private HTML separator;
 	public VerticalPanel panel;
+	public FocusPanel focusPanel;
 	public ExtendedScrollTable table;
 	private FixedWidthFlexTable headerTable;
 	private FixedWidthGrid dataTable;
@@ -146,6 +150,9 @@ public class FileBrowser extends Composite implements OriginPanel, HasDocumentEv
 	private int nextRefresh = GET_NONE;
 	private Map<String, GWTFilter> mapFilter;
 	
+	// Drag and drop box
+    private DragAndDropBox dragAndDropBox;
+    
 	/**
 	 * FileBrowser
 	 */
@@ -272,9 +279,38 @@ public class FileBrowser extends Composite implements OriginPanel, HasDocumentEv
 		panel.setCellWidth(separator, "100%");
 		panel.setCellVerticalAlignment(table, VerticalPanel.ALIGN_TOP);
 		panel.setVerticalAlignment(VerticalPanel.ALIGN_TOP);
-		initWidget(panel);
+		
+		focusPanel = new FocusPanel(panel);
+        dragAndDropBox = new DragAndDropBox();
+        dragAndDropBox.setVisible(false);
+        panel.add(dragAndDropBox);
+
+        if (DragAndDropUploader.isHTML5DragAndDropApiSupported()) {
+            focusPanel.addDragEnterHandler(new DragEnterHandler() {
+                @Override
+                public void onDragEnter(DragEnterEvent arg0) {
+                    if (actualView != UIDesktopConstants.NAVIGATOR_TRASH && actualView != UIDesktopConstants.NAVIGATOR_METADATA
+                            && actualView != UIDesktopConstants.NAVIGATOR_CATEGORIES) {
+                        dragAndDropBox.show(panel.getOffsetWidth(), panel.getOffsetHeight(), panel.getAbsoluteLeft(), panel.getAbsoluteTop());
+                    }
+                }
+            });
+        }
+
+        initWidget(focusPanel);
 	}
 
+    /**
+     * Get actual path from view.
+     */
+    public String getActualPath() {
+        if (Main.get() != null && Main.get().activeFolderTree != null) {
+            return Main.get().activeFolderTree.getActualPath();
+        } else {
+            return "";
+        }
+    }
+    
 	/**
 	 * Resets the file browser values
 	 */
@@ -1253,7 +1289,7 @@ public class FileBrowser extends Composite implements OriginPanel, HasDocumentEv
 	 */
 	public void refreshDocumentValues() {
 		Main.get().mainPanel.desktop.browser.fileBrowser.status.setFlagGetDocument();
-		documentService.get(((GWTDocument) table.getDocument()).getPath(), callbackGetDocument);
+		documentService.getProperties(((GWTDocument) table.getDocument()).getPath(), callbackGetDocument);
 	}
 
 	/**

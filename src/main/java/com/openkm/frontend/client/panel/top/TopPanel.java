@@ -21,12 +21,26 @@
 
 package com.openkm.frontend.client.panel.top;
 
-import com.google.gwt.event.dom.client.*;
+import com.google.gwt.event.dom.client.ClickEvent;
+import com.google.gwt.event.dom.client.ClickHandler;
+import com.google.gwt.event.dom.client.HasClickHandlers;
+import com.google.gwt.event.dom.client.KeyCodes;
+import com.google.gwt.event.dom.client.KeyUpEvent;
+import com.google.gwt.event.dom.client.KeyUpHandler;
 import com.google.gwt.event.shared.HandlerRegistration;
 import com.google.gwt.user.client.Event;
-import com.google.gwt.user.client.ui.*;
+import com.google.gwt.user.client.ui.Composite;
+import com.google.gwt.user.client.ui.HTML;
+import com.google.gwt.user.client.ui.HasAlignment;
+import com.google.gwt.user.client.ui.HorizontalPanel;
+import com.google.gwt.user.client.ui.Image;
+import com.google.gwt.user.client.ui.Label;
+import com.google.gwt.user.client.ui.SimplePanel;
+import com.google.gwt.user.client.ui.TextBox;
+import com.google.gwt.user.client.ui.VerticalPanel;
 import com.openkm.frontend.client.Main;
 import com.openkm.frontend.client.constants.ui.UIDockPanelConstants;
+import com.openkm.frontend.client.extension.comunicator.UtilComunicator;
 import com.openkm.frontend.client.util.OKMBundleResources;
 import com.openkm.frontend.client.util.Util;
 import com.openkm.frontend.client.widget.TabWorkspace;
@@ -47,6 +61,7 @@ public class TopPanel extends Composite {
 	private HorizontalPanel horizontalPanel;
 	private HorizontalPanel horizontalPanelMenu;
 	private ExtendedHorizontalPanel uploadingPanel;
+	private ExtendedHorizontalPanel dragAndDropUploadingPanel;
 	private HorizontalPanel quickSearchPanel;
 	public MainMenu mainMenu;
 	public ToolBar toolBar;
@@ -56,8 +71,11 @@ public class TopPanel extends Composite {
 	private TextBox quickSearch;
 	private Image searchImage;
 	private HTML pendingInfo;
+	private HTML dragAndDropPendingInfo;
 	private Image arrowUp;
+	private Image dragAndDropArrowUp;
 	private HTML percentage;
+	private HTML dragAndDropPercentage;
 	public HTML openkmVersion;
 	private int number = 0;
 
@@ -104,6 +122,25 @@ public class TopPanel extends Composite {
 		uploadingPanel.add(Util.hSpace("5px"));
 		uploadingPanel.setVisible(false);
 
+        dragAndDropUploadingPanel = new ExtendedHorizontalPanel();
+        dragAndDropUploadingPanel.addClickHandler(new ClickHandler() {
+            @Override
+            public void onClick(ClickEvent event) {
+                Main.get().dragAndDropPopup.setModal(true);
+                Main.get().dragAndDropPopup.center();
+            }
+        });
+        dragAndDropUploadingPanel.setStyleName("okm-Mail-Link");
+        dragAndDropPendingInfo = new HTML();
+        dragAndDropPercentage = new HTML();
+        dragAndDropArrowUp = new Image(OKMBundleResources.INSTANCE.arrowUp());
+        dragAndDropUploadingPanel.add(dragAndDropArrowUp);
+        dragAndDropUploadingPanel.add(dragAndDropPercentage);
+        dragAndDropUploadingPanel.add(Util.hSpace("2px"));
+        dragAndDropUploadingPanel.add(dragAndDropPendingInfo);
+        dragAndDropUploadingPanel.add(Util.hSpace("5px"));
+        dragAndDropUploadingPanel.setVisible(false);        
+        
 		quickSearch = new TextBox();
 		quickSearch.addKeyUpHandler(new KeyUpHandler() {
 			@Override
@@ -145,16 +182,22 @@ public class TopPanel extends Composite {
 		SimplePanel separator = new SimplePanel();
 		separator.setWidth("100%");
 		horizontalPanelMenu.add(separator);
-		horizontalPanelMenu.add(uploadingPanel);
-		horizontalPanelMenu.add(quickSearchPanel);
+		
+		HorizontalPanel hPanel = new HorizontalPanel();
+        hPanel.add(uploadingPanel);
+        hPanel.add(UtilComunicator.hSpace("5px"));
+        hPanel.add(dragAndDropUploadingPanel);
+        horizontalPanelMenu.add(hPanel);
+        
+		horizontalPanelMenu.add(quickSearchPanel);		
 		Image logo = new Image("../logo/tiny");
 		horizontalPanelMenu.add(logo);
-		horizontalPanelMenu.setCellHorizontalAlignment(uploadingPanel, HasAlignment.ALIGN_RIGHT);
-		horizontalPanelMenu.setCellVerticalAlignment(uploadingPanel, HasAlignment.ALIGN_MIDDLE);
+		horizontalPanelMenu.setCellHorizontalAlignment(hPanel, HasAlignment.ALIGN_RIGHT);
+		horizontalPanelMenu.setCellVerticalAlignment(hPanel, HasAlignment.ALIGN_MIDDLE);
 		horizontalPanelMenu.setCellHorizontalAlignment(quickSearchPanel, HasAlignment.ALIGN_RIGHT);
 		horizontalPanelMenu.setCellVerticalAlignment(quickSearchPanel, HasAlignment.ALIGN_MIDDLE);
 		horizontalPanelMenu.setCellHorizontalAlignment(logo, HasAlignment.ALIGN_RIGHT);
-		horizontalPanelMenu.setCellVerticalAlignment(logo, HasAlignment.ALIGN_MIDDLE);
+		horizontalPanelMenu.setCellVerticalAlignment(logo, HasAlignment.ALIGN_MIDDLE);		
 		horizontalPanelMenu.setCellWidth(quickSearchPanel, "220px");
 		horizontalPanelMenu.setCellWidth(logo, "40px");
 		panel.setStyleName("okm-TopPanel");
@@ -178,7 +221,6 @@ public class TopPanel extends Composite {
 		horizontalPanel.setCellWidth(leftLabel, "10px");
 		horizontalPanel.setCellWidth(panel, "100%");
 		horizontalPanel.setCellWidth(rightLabel, "10px");
-
 		horizontalPanel.setHeight("" + PANEL_HEIGHT + "px");
 
 		initWidget(horizontalPanel);
@@ -209,6 +251,30 @@ public class TopPanel extends Composite {
 		}
 	}
 
+    /**
+     * setDragAndDropPendingFilesToUpload
+     *
+     * @param number
+     */
+    public void setDragAndDropPendingFilesToUpload(int number) {
+        dragAndDropUploadingPanel.setVisible(number > 0);
+        dragAndDropPendingInfo.setVisible((number - 1) > 0);
+        dragAndDropPendingInfo.setHTML((number - 1) + " " + Main.i18n("fileupload.upload.queued"));
+    }
+
+    /**
+     * setDragAndDropPercentageUploading
+     */
+    public void setDragAndDropPercentageUploading(int percentage) {
+        if (percentage == 0) {
+            dragAndDropArrowUp.setVisible(false);
+            this.dragAndDropPercentage.setHTML("");
+        } else {
+            dragAndDropArrowUp.setVisible(true);
+            this.dragAndDropPercentage.setHTML("( " + percentage + "% )");
+        }
+    }
+    
 	/**
 	 * executeQuickSearch
 	 */

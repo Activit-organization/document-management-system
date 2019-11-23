@@ -427,8 +427,8 @@ public class DocumentServlet extends OKMRemoteServiceServlet implements OKMDocum
 	}
 
 	@Override
-	public GWTDocument get(String docPath) throws OKMException {
-		log.debug("get({})", docPath);
+	public GWTDocument getProperties(String docPath) throws OKMException {
+		log.debug("getProperties({})", docPath);
 		GWTDocument gWTDocument = new GWTDocument();
 		updateSessionManager();
 

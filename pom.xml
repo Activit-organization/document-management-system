@@ -865,6 +865,13 @@
       <artifactId>zip4j</artifactId>
       <version>1.3.2</version>
     </dependency>
+    
+    <!-- Drag and drop -->
+    <dependency>
+      <groupId>com.github.akjava</groupId>
+      <artifactId>html5gwt</artifactId>
+      <version>140127</version>
+    </dependency>
   </dependencies>
 
   <build>
